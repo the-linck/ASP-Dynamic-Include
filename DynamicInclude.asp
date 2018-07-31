@@ -1,5 +1,28 @@
 <%
-DynamicInclude_MustBeGlobal = false
+' Previous path for recursive file importing
+DynamicInclude_PreviousPath = ""
+' Current path for recursive file importing
+DynamicInclude_CurrentPath  = "./"
+
+
+
+' Imports and executes File in the global namespace.
+'
+' @param {string} File
+Sub ExecuteFile( File )
+    Dim Parsed
+    ' Path operations for recursive file importing
+    DynamicInclude_PreviousPath = DynamicInclude_CurrentPath
+    DynamicInclude_NextPath = FilePath(File)
+    DynamicInclude_CurrentPath = DynamicInclude_CurrentPath & FilePath(File)
+    File = FileName(File)
+    ' Parsing ASP file
+    Parsed = ParseFile(DynamicInclude_CurrentPath & File)
+    ' Always importing in global namespace (to prevent errors)
+    Call ExecuteGlobal(trim(Parsed))
+    ' Restoring path operation
+    DynamicInclude_CurrentPath = DynamicInclude_PreviousPath
+End Sub
 ' Checks if File does exist in System.
 '
 ' @param {string} File
@@ -18,11 +41,50 @@ Function FileExists(File)
     FileExists = FileDoExist(File, System)
     Set System = Nothing
 End Function
+' Gets the name of the file.
+'
+' @param {string} File
+' @return {string}
+Function FileName(File)
+    Dim BarIndex
+
+    File = Replace(File, "\", "/")
+    BarIndex = InStrRev(File, "/")
+
+    FileName = Mid(File, BarIndex + 1, LEN(File) - BarIndex)
+End Function
+' Gets the path of a file.
+'
+' @param {string} File
+' @return {string}
+Function FilePath(File)
+    Dim BarIndex
+
+    File = Replace(File, "\", "/")
+    BarIndex = InStrRev(File, "/")
+
+    if IsNull(BarIndex) or BarIndex = 0 then
+        FilePath = ""
+    else
+        FilePath = Mid(File, 1, BarIndex)
+    end if
+End Function
 ' Syntax sugar.
 '
 ' @return {FileSystemObject}
 Function FileSystem( )
     Set FileSystem = Server.CreateObject("Scripting.FileSystemObject")
+End Function
+' Gets the absolute equivalent of Path.
+'
+' @param {string} Path
+' @return {string}
+Function MapPath( Path )
+    if Path = "" then
+        Path = "./"
+    end if
+
+    MapPath = Server.MapPath(Path)
 End Function
 ' Reads File as ASP code.
 '
@@ -38,8 +100,6 @@ Function ParseFile( File )
     Dim PlainRow
     Dim Regex
     Dim WriteTag
-
-    DynamicInclude_MustBeGlobal = false
 
     CloseTag = Chr(37)&Chr(62)
     LineJoin = """ & VbCrLf & """
@@ -58,11 +118,14 @@ Function ParseFile( File )
     ' Removing out comments
     Regex.Pattern = "^\s*'.*$"
     ParseFile = Regex.Replace(ParseFile, "")
-    ' Removing duplicate new lines
-    Regex.Pattern = "(?:\s*\n)+"
-    ParseFile = Regex.Replace(ParseFile, VbCrLf)
+    ' Adding nem line separator in tags (otherwise the rows regex will fail)
+    ParseFile = Replace(ParseFile, CloseTag & OpenTag, CloseTag & VbCrLf & OpenTag)
+    ParseFile = Replace(ParseFile, OpenTag & CloseTag, OpenTag & VbCrLf & CloseTag)
     ' Replacing write tag with expanded command
     ParseFile = Replace(ParseFile, WriteTag, OpenTag & " Response.Write ")
+    ' Converting ASP imports to Require calls
+    Regex.Pattern = "<!--#include file=(""[^""]+"")-->"
+    ParseFile = Regex.Replace(ParseFile, OpenTag & " Require($1) " & CloseTag)
     ' Adding ASP tags when needed
     If LEFT(ParseFile, 2) <> OpenTag Then
         ParseFile = OpenTag & CloseTag & VbCrLf & ParseFile
@@ -70,8 +133,9 @@ Function ParseFile( File )
     If RIGHT(ParseFile, 2) <> CloseTag Then
         ParseFile =  ParseFile & VbCrLf & OpenTag & CloseTag
     End If
-    ' Replacing free percentage symbols (but keeping ASP Tags)
+    ' Trimming fist open tag and last close tag
     ParseFile = Mid(ParseFile, 3, LEN(ParseFile) -4)
+    ' Replacing free percentage symbols (but keeping ASP Tags)
     ParseFile = Replace(ParseFile, "%", "&percnt;")
     ParseFile = Replace(ParseFile, "<&percnt;", OpenTag)
     ParseFile = Replace(ParseFile, "&percnt;>", CloseTag)
@@ -96,12 +160,11 @@ Function ParseFile( File )
         ' Replacing original line with corrected one
         ParseFile = Replace(ParseFile, Match.value, PlainRow)
     Next
-    ' Detecting class declarations
-    Regex.Pattern = OpenTag & "(?:.|\n)+class(?:.|\n)+end class(?:.|\n)+" & CloseTag
-    Set Rows = Regex.Execute(ParseFile)
-    if Rows.Count <> 0 then
-        DynamicInclude_MustBeGlobal = true
-    end if
+    ' Removing empty Response.write commands
+    ParseFile = Replace(ParseFile, "Response.write """"" & VbCrLf, "")
+    ' Removing duplicate new lines
+    Regex.Pattern = "(?:\s*\n)+"
+    ParseFile = Regex.Replace(ParseFile, VbCrLf)
 
     Set Regex = Nothing
 End Function
@@ -111,7 +174,7 @@ End Function
 ' @return {string}
 Function ReadFile(File)
     Set System = FileSystem()
-    Set FileData = System.OpenTextFile(Server.MapPath(File), 1)
+    Set FileData = System.OpenTextFile(MapPath(File), 1)
 
     if FileDoExist(File, System) then
         ReadFile = FileData.ReadAll
@@ -122,30 +185,25 @@ Function ReadFile(File)
     Set FileData = Nothing
     Set System = Nothing
 End Function
-' Tries to include File on current script.
+' Tries to import File on current script.
 ' In case of failure, continues silently.
 '
 ' @param {string} File
 Sub Include(File)
     On Error Resume Next
         ' Execute the code or fails silently
-        ' Uses class declaration detection to prevent 
-        if DynamicInclude_MustBeGlobal then
-            Call ExecuteGlobal(ParseFile(File))
-        else
-            Call Execute(ParseFile(File))
-        end if
+        Call ExecuteFile(File)
     On Error Goto 0
 End Sub
-' Tries to include File on current script.
+' Tries to import File on current script.
 ' In case of failure, ends script execution with error message.
 '
 ' @param {string} File
 Sub Require(File)
     On Error Resume Next
         ' Execute the code
-        Call Execute(ParseFile(File))
-        ' If an error occurs, detect it here and stop parsing after displaying error.
+        Call ExecuteFile(File)
+        ' If an error occurs, detect it here and stop execution.
         If Err.Number > 0 Then
             Response.Write "---FATAL ERROR: while trying to execute <b>" & File & "</b>---<br>" & VbCrLf
             Response.Write "---Error description: " & Err.Description & "<br>" & VbCrLf

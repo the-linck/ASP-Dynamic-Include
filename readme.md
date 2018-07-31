@@ -35,12 +35,20 @@ Tries to include a file on current script. If no errors occur file is included, 
 ## Additional Methods
 
 The following extra methods are also provided with the library, because they are internaly used by *Include* and *Require*:
+* __ExecuteFile__( string __File__, FileSystemObject __System__)  
+Imports and executes File in the global namespace.
 * boolean __FileDoExist__( string __File__, FileSystemObject __System__)  
 Checks if _File_ does exist in _System_. Useful to avoid extra FileSystemObject allocation.
 * boolean __FileExists__( string __File__)  
 Checks if File exist.
+* string __FileName__( string __File__)  
+Gets the name of the file.
+* string __FilePath__( string __File__)  
+Gets the path of a file.
 * FileSystemObject __FileSystem__( )  
 Syntax sugar.
+* string __MapPath__( string __File__)  
+Gets the absolute equivalent of Path.
 * string __ParseFile__( string __File__)  
 Reads File as ASP code.
 * string __ReadFile__( string __File__)  
