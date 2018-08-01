@@ -115,10 +115,7 @@ Function ParseFile( File )
     End With
     ' Reading file
     ParseFile = ReadFile(File)
-    ' Removing out comments
-    Regex.Pattern = "^\s*'.*$"
-    ParseFile = Regex.Replace(ParseFile, "")
-    ' Adding nem line separator in tags (otherwise the rows regex will fail)
+    ' Adding new line separator in tags (otherwise the rows regex will fail)
     ParseFile = Replace(ParseFile, CloseTag & OpenTag, CloseTag & VbCrLf & OpenTag)
     ParseFile = Replace(ParseFile, OpenTag & CloseTag, OpenTag & VbCrLf & CloseTag)
     ' Replacing write tag with expanded command
