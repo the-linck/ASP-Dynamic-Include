@@ -9,9 +9,9 @@ There are not many relevent new resources to be added in this project, so certai
 ## Parsing proccess
 
 The inclusion is made reading and parsing the files, converting all plain-text
-blocks to sequences of _Response.Write_ commands. Short ASP output tags (__&lt;=__) in  are expanded to _Response.Write_ commands.
+blocks to sequences of _Response.Write_ commands. Short ASP output tags (__&lt;%=__) in  are expanded to _Response.Write_ commands.
 
-During the previous steps, all ASP tags (__&lt;__ and __&gt;__) are removed from the code.  
+During the previous steps, all ASP tags (__&lt;%__ and __&gt;%__) are removed from the code.  
 At the end of this proccess, all plain text is conveted to VBScript output with valid code.
 
 **_Warning:_ If a included file contains *class* declarations it will be executed on the global namespace - it's a simple fix for a VBScript limitation.**
