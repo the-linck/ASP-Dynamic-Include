@@ -6,22 +6,23 @@ DynamicInclude_CurrentPath  = "./"
 
 
 
-' Imports and executes File in the global namespace.
+' Executes an imported file in the global namespace.
 '
 ' @param {string} File
 Sub ExecuteFile( File )
     Dim Parsed
     ' Path operations for recursive file importing
     DynamicInclude_PreviousPath = DynamicInclude_CurrentPath
-    DynamicInclude_NextPath = FilePath(File)
+    'DynamicInclude_NextPath = FilePath(File)
     DynamicInclude_CurrentPath = DynamicInclude_CurrentPath & FilePath(File)
     File = FileName(File)
     ' Parsing ASP file
     Parsed = ParseFile(DynamicInclude_CurrentPath & File)
     ' Always importing in global namespace (to prevent errors)
-    Call ExecuteGlobal(trim(Parsed))
+    ExecuteGlobal Trim(Parsed)
     ' Restoring path operation
-    DynamicInclude_CurrentPath = DynamicInclude_PreviousPath
+    DynamicInclude_CurrentPath = "./"
+    DynamicInclude_PreviousPath = ""
 End Sub
 ' Checks if File does exist in System.
 '
@@ -115,13 +116,13 @@ Function ParseFile( File )
     End With
     ' Reading file
     ParseFile = ReadFile(File)
-    ' Adding new line separator in tags (otherwise the rows regex will fail)
+    ' Adding nem line separator in tags (otherwise the rows regex will fail)
     ParseFile = Replace(ParseFile, CloseTag & OpenTag, CloseTag & VbCrLf & OpenTag)
     ParseFile = Replace(ParseFile, OpenTag & CloseTag, OpenTag & VbCrLf & CloseTag)
     ' Replacing write tag with expanded command
     ParseFile = Replace(ParseFile, WriteTag, OpenTag & " Response.Write ")
     ' Converting ASP imports to Require calls
-    Regex.Pattern = "<!--#include file=(""[^""]+"")-->"
+    Regex.Pattern = "<!--\s*#include file=(""[^""]+"")\s*-->"
     ParseFile = Regex.Replace(ParseFile, OpenTag & " Require($1) " & CloseTag)
     ' Adding ASP tags when needed
     If LEFT(ParseFile, 2) <> OpenTag Then
@@ -176,37 +177,37 @@ Function ReadFile(File)
     if FileDoExist(File, System) then
         ReadFile = FileData.ReadAll
     else
-        Call Err.Raise(53)
+        Err.Raise 53
     end if
 
     Set FileData = Nothing
     Set System = Nothing
 End Function
-' Tries to import File on current script.
+' Tries to include File on current script.
 ' In case of failure, continues silently.
 '
 ' @param {string} File
 Sub Include(File)
     On Error Resume Next
         ' Execute the code or fails silently
-        Call ExecuteFile(File)
+        ExecuteFile File
     On Error Goto 0
 End Sub
-' Tries to import File on current script.
+' Tries to include File on current script.
 ' In case of failure, ends script execution with error message.
 '
 ' @param {string} File
 Sub Require(File)
     On Error Resume Next
         ' Execute the code
-        Call ExecuteFile(File)
+        ExecuteFile File
         ' If an error occurs, detect it here and stop execution.
         If Err.Number > 0 Then
             Response.Write "---FATAL ERROR: while trying to execute <b>" & File & "</b>---<br>" & VbCrLf
             Response.Write "---Error description: " & Err.Description & "<br>" & VbCrLf
             Response.Write "---Error Source: " & Err.Source & "<hr>" & VbCrLf
             Response.Write "---Error Line: " & Err.Line & "<hr>" & VbCrLf
-            Call Response.End()
+            Response.End
         End If
     On Error Goto 0
 End Sub
