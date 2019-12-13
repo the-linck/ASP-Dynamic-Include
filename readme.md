@@ -8,15 +8,15 @@ There are not many relevent new resources to be added in this project, so certai
 
 ## How to use
 
-Just use a classic server-side include to add *DynamicInclude.asp* on your project and call the include methods provided by this library to load files dynamically.
+Just do a classic server-side include to add *DynamicInclude.asp* on your project and call the methods provided by this library to load files dynamically.
 
 *Hint: obviously its faster to use standard includes when posssible than calling everything by this library.*
 
 
 
-## Provided Include Methods
+## Provided Methods
 
-There are two include methods, inspired in PHP's way of including files:
+There are two methods for executing files, inspired in PHP's way of including files:
 * __Include__(string __File__)  
 Tries to include a file on current script. If no errors occur file is included, else just fails quietly.
 * __Require__(string __File__)  
