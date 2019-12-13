@@ -22,22 +22,23 @@ Private DI_ResponseWrite : DI_ResponseWrite = DI_OpenTag & " Response.Write "
 ' Dynamic require call
 Private DI_Require : DI_Require = DI_OpenTag & (" Require($1) " & DI_CloseTag)
 
-' Operator uses to join lines while parsing
-'Private DI_LineJoin : DI_LineJoin = """ & vbNewLine & """
+
 
 ' Public variables
-' Previous path for recursive file importing
+' Path of the last included file, used for recursive file importing.
+' May be used along with *DynamicInclude_CurrentPath* to change how recursive imports will behave.
 Public DynamicInclude_PreviousPath : DynamicInclude_PreviousPath = vbNullString
-' Current path for recursive file importing
+' Path of current file to include, used for recursive file importing.
+' May be used along with *DynamicInclude_CurrentPath* to change how recursive imports will behave.
 Public DynamicInclude_CurrentPath  : DynamicInclude_CurrentPath  = DI_CurrentFolder
-' If HTML should be trimmed
+' If HTML text should be trimmed while parsing.
 Public DynamicInclude_TrimHtml : DynamicInclude_TrimHtml = false
-' If duplicated new lines hould be removed
+' If duplicated new lines hould be removed from parsed text.
 Public DynamicInclude_TrimNewlines : DynamicInclude_TrimNewlines = false
 
 
 
-' Executes an imported file in the global namespace.
+' Executes an imported file in the global namespace, dealing with paths for recursive calls.
 '
 ' @param {string} File
 Sub ExecuteFile( ByVal File )
@@ -82,6 +83,7 @@ End Sub
 Function ParseFile(ByRef File)
     ' Operator uses to join lines while parsing
     Const DI_LineJoin = """ & vbNewLine & """
+    ' Self-explaining constants
     Const DI_Space = " "
     Const DI_Quote = """"
     Const DI_DoubleQuote = """"""
