@@ -10,7 +10,7 @@ There are not many relevent new resources to be added in this project, so certai
 
 Just do a classic server-side include to add *DynamicInclude.asp* on your project and call the methods provided by this library to load files dynamically.
 
-*Hint: obviously its faster to use standard includes when posssible than calling everything by this library.*
+*Hint: obviously it's faster to use standard includes when posssible than calling everything by this library.*
 
 
 
@@ -50,10 +50,10 @@ The inclusion is made reading and parsing the files, converting all plain-text
 blocks to sequences of _Response.Write_ commands. Short ASP output tags (__&lt;%=__) in  are expanded to _Response.Write_ commands.
 
 During the those steps, all ASP tags (__&lt;%__ and __&gt;%__) are removed from the code.  
-At the end of this proccess, all text is conveted to pain *VBScript* output with valid code.
+At the end of this proccess, all text is conveted to plain *VBScript* output with valid code.
 
 
-**_Warning:_ Everything will be executed on the global namespace.A flag to control this behavior may be added in the future.**
+**_Warning:_ Everything will be executed on the global namespace. A flag to control this behavior may be added in the future.**
 
 **_Warning:_ Do not import/require files the have VBScript Class declarations inside control flow statements (if/else/case) or loops. Conditional class declaration isn't  supported by Classic ASP.**
 
